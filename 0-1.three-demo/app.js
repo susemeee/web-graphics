@@ -1,8 +1,20 @@
+var color = {
+    ambient: 0x666666,
+    yellow: 0xEDE574,
+    blue: 0xDAFBF8,
+    green: 0xE1F5C4,
+    red: 0xFF4E50,
+    orange: 0xFC913A,
+    yellow2: 0xEDE574,
+    white: 0xFFFFFF,
+}
+
 var app = (function() {
     var stats;
     var camera, scene, renderer;
     var mesh;
     var controls;
+    var clock;
 
     function initController() {
         controls = new THREE.FirstPersonControls(camera);
@@ -29,12 +41,13 @@ var app = (function() {
     }
 
     function addTerrain() {
-        var worldWidth = 192,
-            worldDepth = 512,
+        var worldWidth = 96,
+            worldDepth = 96,
             worldHalfWidth = worldWidth / 2,
             worldHalfDepth = worldDepth / 2;
 
-        data = generateHeight(worldWidth, worldDepth);
+        var data = generateHeight(worldWidth, worldDepth);
+        console.log(data)
 
         camera.position.y = data[worldHalfWidth + worldHalfDepth * worldWidth] * 10 + 500;
         var geometry = new THREE.PlaneBufferGeometry(15000, 15000, worldWidth - 1, worldDepth - 1);
@@ -42,16 +55,14 @@ var app = (function() {
 
         var vertices = geometry.attributes.position.array;
         for (var i = 0, j = 0, l = vertices.length; i < l; i++, j += 3) {
-            vertices[j + 1] = data[i] * 10;
+            vertices[j + 1] = data[i] * 20;
         }
 
         var material = new THREE.MeshPhongMaterial({
-            color: 0xffffff,
-            specular: 0xffffff,
-            shininess: 20,
-            morphTargets: true,
-            vertexColors: THREE.FaceColors,
-            shading: THREE.FlatShading
+            color: color.ambient,
+            specular: color.orange,
+            shininess: 1,
+            shading: THREE.FlatShading,
         });
 
         mesh = new THREE.Mesh(geometry, material);
@@ -59,13 +70,16 @@ var app = (function() {
     }
 
     function addLight() {
-        var light = new THREE.AmbientLight(0x404040);
-        scene.add(light);
+        scene.add( new THREE.AmbientLight(color.blue) );
+
+        var directionalLight = new THREE.DirectionalLight( color.yellow2, 1 );
+        directionalLight.position.set( 1, 1, 1 ).normalize();
+        scene.add( directionalLight );
     }
 
     function initRenderer() {
-        renderer = new THREE.WebGLRenderer();
-        renderer.setClearColor(scene.fog.color);
+        renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer.setClearColor(color.blue);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
@@ -74,13 +88,12 @@ var app = (function() {
     function init() {
         // scene and camera
         scene = new THREE.Scene();
-        scene.fog = new THREE.Fog(0xffffff, 1, 5000);
-        scene.fog.color.setHSL(0.6, 0, 1);
 
+        clock = new THREE.Clock();
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
         camera.position.z = 1000;
 
-        // initController();
+        initController();
         addTerrain();
         addLight();
         initRenderer();
@@ -95,8 +108,8 @@ var app = (function() {
 
     function animate() {
         requestAnimationFrame(animate);
-
         renderer.render(scene, camera);
+        controls.update(clock.getDelta());
     }
 
 
@@ -104,7 +117,7 @@ var app = (function() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
-        // controls.handleResize();
+        controls.handleResize();
     }
 
 
